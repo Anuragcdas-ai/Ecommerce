@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block title %}Logged Out{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body text-center">
+                <h2 class="card-title mb-4">You've Been Logged Out</h2>
+                
+                <p class="lead">
+                    Thank you for visiting! Come back soon.
+                </p>
+                
+                <hr>
+                
+                <div class="d-grid gap-2">
+                    <a href="{% url 'accounts:login' %}" class="btn btn-primary">Log In Again</a>
+                    <a href="{% url 'products:product_list' %}" class="btn btn-outline-secondary">Return to Home</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

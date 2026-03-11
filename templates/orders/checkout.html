@@ -1,0 +1,199 @@
+{% extends 'base.html' %}
+
+{% block title %}Checkout{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <h2>Checkout</h2>
+        
+        {% if not user.is_authenticated %}
+        <div class="alert alert-info">
+            <h5>Already have an account?</h5>
+            <p><a href="{% url 'accounts:login' %}?next={% url 'orders:checkout' %}">Login</a> for faster checkout.</p>
+        </div>
+        {% endif %}
+        
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Shipping Address</h5>
+                
+                {% if shipping_addresses %}
+                <div class="mb-3">
+                    <label class="form-label">Select saved address</label>
+                    <select class="form-select" id="addressSelect">
+                        <option value="">Choose an address...</option>
+                        {% for address in shipping_addresses %}
+                        <option value="{{ address.id }}" 
+                                data-first="{{ address.first_name }}"
+                                data-last="{{ address.last_name }}"
+                                data-phone="{{ address.phone }}"
+                                data-address="{{ address.address }}"
+                                data-address2="{{ address.address2 }}"
+                                data-city="{{ address.city }}"
+                                data-state="{{ address.state }}"
+                                data-postal="{{ address.postal_code }}"
+                                data-country="{{ address.country }}">
+                            {{ address.address }}, {{ address.city }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+                
+                <form method="post" action="{% url 'orders:order_create' %}" id="checkoutForm">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">First Name *</label>
+                            <input type="text" name="first_name" class="form-control" required 
+                                   value="{{ default_address.first_name|default:user.first_name }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Last Name *</label>
+                            <input type="text" name="last_name" class="form-control" required
+                                   value="{{ default_address.last_name|default:user.last_name }}">
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Email *</label>
+                            <input type="email" name="email" class="form-control" required
+                                   value="{{ user.email|default:'' }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Phone *</label>
+                            <input type="tel" name="phone" class="form-control" required
+                                   value="{{ default_address.phone|default:'' }}">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Address *</label>
+                        <input type="text" name="address" class="form-control" required
+                               value="{{ default_address.address|default:'' }}">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Address Line 2</label>
+                        <input type="text" name="address2" class="form-control"
+                               value="{{ default_address.address2|default:'' }}">
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-5 mb-3">
+                            <label class="form-label">City *</label>
+                            <input type="text" name="city" class="form-control" required
+                                   value="{{ default_address.city|default:'' }}">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">State *</label>
+                            <input type="text" name="state" class="form-control" required
+                                   value="{{ default_address.state|default:'' }}">
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Postal Code *</label>
+                            <input type="text" name="postal_code" class="form-control" required
+                                   value="{{ default_address.postal_code|default:'' }}">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Country *</label>
+                        <input type="text" name="country" class="form-control" required
+                               value="{{ default_address.country|default:'' }}">
+                    </div>
+                    
+                    <hr>
+                    
+                    <h5 class="mb-3">Payment Method</h5>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="payment_method" id="cod" value="cod" checked>
+                            <label class="form-check-label" for="cod">
+                                Cash on Delivery
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="payment_method" id="card" value="card" disabled>
+                            <label class="form-check-label" for="card">
+                                Credit/Debit Card (Coming Soon)
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Order Notes (Optional)</label>
+                        <textarea name="notes" class="form-control" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Order Summary</h5>
+                
+                {% for item in cart_items %}
+                <div class="d-flex justify-content-between mb-2">
+                    <span>{{ item.product.name }} (x{{ item.quantity }})</span>
+                    <span>${{ item.get_cost }}</span>
+                </div>
+                {% endfor %}
+                
+                <hr>
+                
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Subtotal:</span>
+                    <span>${{ total_price }}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Shipping:</span>
+                    <span>Free</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Tax (10%):</span>
+                    <span>${{ total_price|add:"0"|floatformat:2|add:"0.00"|floatformat:2 }}</span>
+                </div>
+                
+                <hr>
+                
+                <div class="d-flex justify-content-between mb-3">
+                    <strong>Total:</strong>
+                    <strong>${{ total_price|add:"0"|floatformat:2|add:total_price|floatformat:2 }}</strong>
+                </div>
+                
+                <button type="submit" form="checkoutForm" class="btn btn-success w-100 btn-lg">
+                    Place Order
+                </button>
+                
+                <a href="{% url 'cart:cart_detail' %}" class="btn btn-outline-secondary w-100 mt-2">
+                    Return to Cart
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('addressSelect')?.addEventListener('change', function() {
+    if (this.value) {
+        const selected = this.options[this.selectedIndex];
+        document.querySelector('input[name="first_name"]').value = selected.dataset.first;
+        document.querySelector('input[name="last_name"]').value = selected.dataset.last;
+        document.querySelector('input[name="phone"]').value = selected.dataset.phone;
+        document.querySelector('input[name="address"]').value = selected.dataset.address;
+        document.querySelector('input[name="address2"]').value = selected.dataset.address2 || '';
+        document.querySelector('input[name="city"]').value = selected.dataset.city;
+        document.querySelector('input[name="state"]').value = selected.dataset.state;
+        document.querySelector('input[name="postal_code"]').value = selected.dataset.postal;
+        document.querySelector('input[name="country"]').value = selected.dataset.country;
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% block title %}Order Complete{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 text-center">
+        <div class="card">
+            <div class="card-body py-5">
+                <div class="mb-4">
+                    <span class="display-1 text-success">✓</span>
+                </div>
+                
+                <h2 class="mb-3">Thank You for Your Order!</h2>
+                
+                {% if order %}
+                <p class="lead mb-4">
+                    Your order #{{ order.id }} has been placed successfully.
+                </p>
+                
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5>Order Summary</h5>
+                        <p>Order Date: {{ order.created_at|date:"F d, Y" }}</p>
+                        <p>Total Amount: <strong>${{ order.total }}</strong></p>
+                        <p>Payment Method: 
+                            {% if order.payment_method == 'cod' %}
+                                Cash on Delivery
+                            {% else %}
+                                {{ order.payment_method }}
+                            {% endif %}
+                        </p>
+                        <p>Order Status: <span class="badge bg-info">{{ order.get_status_display }}</span></p>
+                    </div>
+                </div>
+                
+                <p>
+                    We've sent a confirmation email to <strong>{{ order.email }}</strong>.<br>
+                    You can track your order status in your account.
+                </p>
+                
+                <div class="mt-4">
+                    <a href="{% url 'orders:order_detail' order.id %}" class="btn btn-primary">View Order Details</a>
+                    <a href="{% url 'products:product_list' %}" class="btn btn-outline-primary">Continue Shopping</a>
+                </div>
+                {% else %}
+                <p class="lead">No order was found.</p>
+                <a href="{% url 'products:product_list' %}" class="btn btn-primary">Continue Shopping</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

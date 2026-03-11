@@ -1,0 +1,168 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    {% if address %}
+        Edit Shipping Address
+    {% else %}
+        Add New Shipping Address
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="card-title text-center mb-4">
+                    {% if address %}
+                        Edit Shipping Address
+                    {% else %}
+                        Add New Shipping Address
+                    {% endif %}
+                </h2>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {% for error in form.non_field_errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="id_first_name" class="form-label">First Name *</label>
+                            <input type="text" name="first_name" class="form-control {% if form.first_name.errors %}is-invalid{% endif %}" 
+                                   id="id_first_name" value="{{ form.first_name.value|default:address.first_name }}" required>
+                            {% if form.first_name.errors %}
+                            <div class="invalid-feedback">
+                                {{ form.first_name.errors.0 }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="id_last_name" class="form-label">Last Name *</label>
+                            <input type="text" name="last_name" class="form-control {% if form.last_name.errors %}is-invalid{% endif %}" 
+                                   id="id_last_name" value="{{ form.last_name.value|default:address.last_name }}" required>
+                            {% if form.last_name.errors %}
+                            <div class="invalid-feedback">
+                                {{ form.last_name.errors.0 }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="id_phone" class="form-label">Phone Number *</label>
+                        <input type="tel" name="phone" class="form-control {% if form.phone.errors %}is-invalid{% endif %}" 
+                               id="id_phone" value="{{ form.phone.value|default:address.phone }}" required>
+                        {% if form.phone.errors %}
+                        <div class="invalid-feedback">
+                            {{ form.phone.errors.0 }}
+                        </div>
+                        {% endif %}
+                        <div class="form-text">Include country code for international numbers</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="id_address" class="form-label">Address Line 1 *</label>
+                        <input type="text" name="address" class="form-control {% if form.address.errors %}is-invalid{% endif %}" 
+                               id="id_address" value="{{ form.address.value|default:address.address }}" required>
+                        {% if form.address.errors %}
+                        <div class="invalid-feedback">
+                            {{ form.address.errors.0 }}
+                        </div>
+                        {% endif %}
+                        <div class="form-text">Street address, P.O. box, company name, c/o</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="id_address2" class="form-label">Address Line 2</label>
+                        <input type="text" name="address2" class="form-control" 
+                               id="id_address2" value="{{ form.address2.value|default:address.address2 }}">
+                        <div class="form-text">Apartment, suite, unit, building, floor, etc.</div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-5 mb-3">
+                            <label for="id_city" class="form-label">City *</label>
+                            <input type="text" name="city" class="form-control {% if form.city.errors %}is-invalid{% endif %}" 
+                                   id="id_city" value="{{ form.city.value|default:address.city }}" required>
+                            {% if form.city.errors %}
+                            <div class="invalid-feedback">
+                                {{ form.city.errors.0 }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="id_state" class="form-label">State/Province *</label>
+                            <input type="text" name="state" class="form-control {% if form.state.errors %}is-invalid{% endif %}" 
+                                   id="id_state" value="{{ form.state.value|default:address.state }}" required>
+                            {% if form.state.errors %}
+                            <div class="invalid-feedback">
+                                {{ form.state.errors.0 }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-3 mb-3">
+                            <label for="id_postal_code" class="form-label">Postal Code *</label>
+                            <input type="text" name="postal_code" class="form-control {% if form.postal_code.errors %}is-invalid{% endif %}" 
+                                   id="id_postal_code" value="{{ form.postal_code.value|default:address.postal_code }}" required>
+                            {% if form.postal_code.errors %}
+                            <div class="invalid-feedback">
+                                {{ form.postal_code.errors.0 }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="id_country" class="form-label">Country *</label>
+                        <select name="country" class="form-select {% if form.country.errors %}is-invalid{% endif %}" 
+                                id="id_country" required>
+                            <option value="">Select country...</option>
+                            <option value="US" {% if form.country.value == 'US' or address.country == 'US' %}selected{% endif %}>United States</option>
+                            <option value="CA" {% if form.country.value == 'CA' or address.country == 'CA' %}selected{% endif %}>Canada</option>
+                            <option value="UK" {% if form.country.value == 'UK' or address.country == 'UK' %}selected{% endif %}>United Kingdom</option>
+                            <option value="AU" {% if form.country.value == 'AU' or address.country == 'AU' %}selected{% endif %}>Australia</option>
+                            <option value="IN" {% if form.country.value == 'IN' or address.country == 'IN' %}selected{% endif %}>India</option>
+                            <option value="other">Other</option>
+                        </select>
+                        {% if form.country.errors %}
+                        <div class="invalid-feedback">
+                            {{ form.country.errors.0 }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" name="is_default" class="form-check-input" id="id_is_default"
+                               {% if form.is_default.value or address.is_default %}checked{% endif %}>
+                        <label class="form-check-label" for="id_is_default">
+                            Set as default shipping address
+                        </label>
+                        <div class="form-text">Your default address will be automatically selected during checkout</div>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            {% if address %}
+                                Update Address
+                            {% else %}
+                                Add Address
+                            {% endif %}
+                        </button>
+                        <a href="{% url 'orders:shipping_address_list' %}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

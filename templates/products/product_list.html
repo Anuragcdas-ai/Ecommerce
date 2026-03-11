@@ -1,0 +1,204 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    {% if current_category %}
+        {{ current_category.name }} - Products
+    {% else %}
+        All Products
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Sidebar Filters -->
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Categories</h5>
+                <ul class="list-unstyled">
+                    <li class="mb-2">
+                        <a href="{% url 'products:product_list' %}" class="{% if not current_category %}fw-bold{% endif %}">
+                            All Products
+                        </a>
+                    </li>
+                    {% for category in categories %}
+                    <li class="mb-2">
+                        <a href="{% url 'products:product_list_by_category' category.slug %}" 
+                           class="{% if current_category.id == category.id %}fw-bold{% endif %}">
+                            {{ category.name }}
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
+                
+                <hr>
+                
+                <h5 class="card-title">Price Range</h5>
+                <form method="get" action=".">
+                    {% if search_query %}
+                    <input type="hidden" name="q" value="{{ search_query }}">
+                    {% endif %}
+                    {% if current_category %}
+                    <input type="hidden" name="category" value="{{ current_category.slug }}">
+                    {% endif %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Min Price ($)</label>
+                        <input type="number" name="min_price" class="form-control" value="{{ request.GET.min_price }}" min="0">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Max Price ($)</label>
+                        <input type="number" name="max_price" class="form-control" value="{{ request.GET.max_price }}" min="0">
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100">Apply Filters</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Product Grid -->
+    <div class="col-md-9">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                {% if current_category %}
+                    {{ current_category.name }}
+                {% else %}
+                    All Products
+                {% endif %}
+            </h2>
+            
+            <div class="d-flex align-items-center">
+                <label class="me-2">Sort by:</label>
+                <select class="form-select" onchange="window.location.href=this.value">
+                    <option value="?{% if search_query %}q={{ search_query }}&{% endif %}sort=newest" 
+                            {% if current_sort == 'newest' %}selected{% endif %}>
+                        Newest
+                    </option>
+                    <option value="?{% if search_query %}q={{ search_query }}&{% endif %}sort=price_low"
+                            {% if current_sort == 'price_low' %}selected{% endif %}>
+                        Price: Low to High
+                    </option>
+                    <option value="?{% if search_query %}q={{ search_query }}&{% endif %}sort=price_high"
+                            {% if current_sort == 'price_high' %}selected{% endif %}>
+                        Price: High to Low
+                    </option>
+                    <option value="?{% if search_query %}q={{ search_query }}&{% endif %}sort=name"
+                            {% if current_sort == 'name' %}selected{% endif %}>
+                        Name
+                    </option>
+                </select>
+            </div>
+        </div>
+        
+        {% if search_query %}
+        <p class="text-muted mb-4">Search results for: "{{ search_query }}"</p>
+        {% endif %}
+        
+        <div class="row">
+            {% for product in products %}
+            <div class="col-md-4 mb-4">
+                <div class="card product-card">
+                    {% if product.image %}
+                    <img src="{{ product.image.url }}" class="card-img-top product-image" alt="{{ product.name }}">
+                    {% else %}
+                    <div class="card-img-top product-image bg-secondary d-flex align-items-center justify-content-center">
+                        <span class="text-white">No Image</span>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="card-body">
+                        <h5 class="card-title">{{ product.name }}</h5>
+                        <p class="card-text text-muted">{{ product.category.name }}</p>
+                        
+                        <div class="mb-2">
+                            <span class="price">${{ product.get_display_price }}</span>
+                            {% if product.discount_price %}
+                            <span class="old-price">${{ product.price }}</span>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="rating mb-2">
+                            {% with avg_rating=product.reviews.all|dictsort:"rating" %}
+                                {% if product.reviews.all %}
+                                    {% for i in "12345" %}
+                                        {% if forloop.counter <= product.reviews.all|dictsortreversed:"rating"|first %}
+                                            ★
+                                        {% else %}
+                                            ☆
+                                        {% endif %}
+                                    {% endfor %}
+                                    <span class="text-muted">({{ product.reviews.count }})</span>
+                                {% else %}
+                                    <span class="text-muted">No reviews</span>
+                                {% endif %}
+                            {% endwith %}
+                        </div>
+                        
+                        <p class="card-text">{{ product.description|truncatewords:15 }}</p>
+                        
+                        {% if product.is_in_stock %}
+                        <span class="badge bg-success mb-2">In Stock</span>
+                        {% else %}
+                        <span class="badge bg-danger mb-2">Out of Stock</span>
+                        {% endif %}
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ product.get_absolute_url }}" class="btn btn-outline-primary">View Details</a>
+                            {% if product.is_in_stock %}
+                            <form action="{% url 'cart:cart_add' %}" method="post">
+                                {% csrf_token %}
+                                <input type="hidden" name="product_id" value="{{ product.id }}">
+                                <input type="hidden" name="quantity" value="1">
+                                <button type="submit" class="btn btn-primary">Add to Cart</button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12">
+                <div class="alert alert-info">
+                    No products found.
+                    {% if search_query %}
+                    <a href="{% url 'products:product_list' %}" class="alert-link">Clear search</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <nav aria-label="Page navigation" class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if current_sort %}&sort={{ current_sort }}{% endif %}{% if request.GET.min_price %}&min_price={{ request.GET.min_price }}{% endif %}{% if request.GET.max_price %}&max_price={{ request.GET.max_price }}{% endif %}">
+                        Previous
+                    </a>
+                </li>
+                {% endif %}
+                
+                {% for num in page_obj.paginator.page_range %}
+                <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+                    <a class="page-link" href="?page={{ num }}{% if search_query %}&q={{ search_query }}{% endif %}{% if current_sort %}&sort={{ current_sort }}{% endif %}{% if request.GET.min_price %}&min_price={{ request.GET.min_price }}{% endif %}{% if request.GET.max_price %}&max_price={{ request.GET.max_price }}{% endif %}">
+                        {{ num }}
+                    </a>
+                </li>
+                {% endfor %}
+                
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if current_sort %}&sort={{ current_sort }}{% endif %}{% if request.GET.min_price %}&min_price={{ request.GET.min_price }}{% endif %}{% if request.GET.max_price %}&max_price={{ request.GET.max_price }}{% endif %}">
+                        Next
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
