@@ -21,14 +21,41 @@
 
                 <span class="badge bg-info">{{ profile.get_user_type_display }}</span>
 
+                {% if profile.user_type == 'merchant' %}
+                    {% if profile.is_verified_merchant %}
+                    <span class="badge bg-success ms-1">Verified</span>
+                    {% else %}
+                    <span class="badge bg-warning ms-1">Pending Approval</span>
+                    {% endif %}
+                {% endif %}
+
                 <hr>
 
                 <div class="d-grid gap-2">
                     <a href="{% url 'accounts:profile_edit' %}" class="btn btn-outline-primary">Edit Profile</a>
                     <a href="{% url 'accounts:change_password' %}" class="btn btn-outline-secondary">Change Password</a>
+                    {% if profile.user_type == 'merchant' and profile.is_verified_merchant %}
+                    <a href="{% url 'products:merchant_product_add' %}" class="btn btn-primary">+ Add New Product</a>
+                    {% endif %}
                 </div>
             </div>
         </div>
+
+        <!-- Merchant business info -->
+        {% if profile.user_type == 'merchant' %}
+        <div class="card mt-3">
+            <div class="card-body">
+                <h5 class="card-title">Business Info</h5>
+                <hr>
+                <p><strong>Company:</strong> {{ profile.company_name|default:"Not provided" }}</p>
+                <p><strong>Business Email:</strong> {{ profile.business_email|default:"Not provided" }}</p>
+                <p><strong>Business Phone:</strong> {{ profile.business_phone|default:"Not provided" }}</p>
+                <p><strong>Address:</strong> {{ profile.business_address|default:"Not provided" }}</p>
+                <p><strong>Tax ID:</strong> {{ profile.tax_id|default:"Not provided" }}</p>
+                <p><strong>Applied:</strong> {{ profile.merchant_application_date|date:"M d, Y"|default:"—" }}</p>
+            </div>
+        </div>
+        {% endif %}
     </div>
 
     <div class="col-md-8">
@@ -68,54 +95,88 @@
             </div>
         </div>
 
-        <!-- Recent Orders -->
-        <div class="card mb-4">
-            <div class="card-header">
-                <h5 class="mb-0">Recent Orders</h5>
+        <!-- MERCHANT: My Products -->
+        {% if profile.user_type == 'merchant' %}
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">My Products</h5>
+                {% if profile.is_verified_merchant %}
+                <a href="{% url 'products:merchant_product_add' %}" class="btn btn-primary btn-sm">+ Add Product</a>
+                {% endif %}
             </div>
             <div class="card-body">
-                {% if recent_orders %}
+                {% if not profile.is_verified_merchant %}
+                <div class="alert alert-warning mb-0">
+                    Your account is pending approval. You can add products once verified.
+                </div>
+                {% elif products %}
                 <div class="table-responsive">
                     <table class="table">
                         <thead>
                             <tr>
-                                <th>Order #</th>
-                                <th>Date</th>
-                                <th>Total</th>
+                                <th>Product</th>
+                                <th>Category</th>
+                                <th>Price</th>
+                                <th>Stock</th>
                                 <th>Status</th>
-                                <th></th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for order in recent_orders %}
+                            {% for product in products %}
                             <tr>
-                                <td>#{{ order.id }}</td>
-                                <td>{{ order.created_at|date:"M d, Y" }}</td>
-                                <td>${{ order.total }}</td>
                                 <td>
-                                    <span class="badge {% if order.status == 'delivered' %}bg-success{% elif order.status == 'cancelled' %}bg-danger{% else %}bg-info{% endif %}">
-                                        {{ order.get_status_display }}
-                                    </span>
+                                    <div class="d-flex align-items-center">
+                                        {% if product.image %}
+                                        <img src="{{ product.image.url }}" alt="{{ product.name }}"
+                                             style="width:40px;height:40px;object-fit:cover;" class="me-2">
+                                        {% endif %}
+                                        {{ product.name }}
+                                    </div>
+                                </td>
+                                <td>{{ product.category.name }}</td>
+                                <td>
+                                    {% if product.discount_price %}
+                                    <span class="text-muted text-decoration-line-through">${{ product.price }}</span>
+                                    ${{ product.discount_price }}
+                                    {% else %}
+                                    ${{ product.price }}
+                                    {% endif %}
                                 </td>
                                 <td>
-                                    <a href="{% url 'orders:order_detail' order.id %}" class="btn btn-sm btn-outline-primary">View</a>
+                                    {% if product.is_in_stock %}
+                                    {{ product.stock }}
+                                    {% else %}
+                                    <span class="text-danger">Out of stock</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if product.is_approved %}
+                                    <span class="badge bg-success">Approved</span>
+                                    {% else %}
+                                    <span class="badge bg-warning">Pending</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'products:merchant_product_edit' product.slug %}"
+                                       class="btn btn-sm btn-outline-primary">Edit</a>
+                                    <a href="{% url 'products:merchant_product_delete' product.slug %}"
+                                       class="btn btn-sm btn-outline-danger">Delete</a>
                                 </td>
                             </tr>
                             {% endfor %}
                         </tbody>
                     </table>
                 </div>
-                <div class="text-end">
-                    <a href="{% url 'orders:order_history' %}" class="btn btn-outline-primary">View All Orders</a>
-                </div>
                 {% else %}
-                <p class="text-muted">You haven't placed any orders yet.</p>
-                <a href="{% url 'products:product_list' %}" class="btn btn-primary">Start Shopping</a>
+                <p class="text-muted">You haven't added any products yet.</p>
+                <a href="{% url 'products:merchant_product_add' %}" class="btn btn-primary">Add Your First Product</a>
                 {% endif %}
             </div>
         </div>
 
-        <!-- Browse Products -->
+        <!-- BUYER: Browse Products -->
+        {% else %}
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">Browse Products</h5>
@@ -149,10 +210,11 @@
                     {% endfor %}
                 </div>
                 {% else %}
-                <p class="text-muted">No products available right now.</p>
+                <p class="text-muted">No products available.</p>
                 {% endif %}
             </div>
         </div>
+        {% endif %}
 
     </div>
 </div>

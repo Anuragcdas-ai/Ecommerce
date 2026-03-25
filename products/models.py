@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth.models import User
 from django.urls import reverse
 from django.utils.text import slugify
 
@@ -27,16 +28,23 @@ class Category(models.Model):
         return reverse('products:product_list_by_category', args=[self.slug])
 
 class Product(models.Model):
+    merchant = models.ForeignKey(User, on_delete=models.CASCADE, related_name='products', limit_choices_to={'profile__user_type': 'merchant', 'profile__is_verified_merchant': True},default=1)
     category = models.ForeignKey(Category, related_name='products', on_delete=models.CASCADE)
     name = models.CharField(max_length=200)
     slug = models.SlugField(max_length=200, unique=True)
     description = models.TextField()
-    price = models.DecimalField(max_digits=10, decimal_places=2,default = 0)
+    price = models.DecimalField(max_digits=10, decimal_places=2)
     discount_price = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     stock = models.PositiveIntegerField(default=0)
     image = models.ImageField(upload_to='products/')
     is_featured = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
+    
+    # Merchant approval (admin can approve products)
+    is_approved = models.BooleanField(default=False)
+    approved_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='approved_products')
+    approved_date = models.DateTimeField(null=True, blank=True)
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -73,7 +81,7 @@ class ProductImage(models.Model):
 
 class ProductReview(models.Model):
     product = models.ForeignKey(Product, related_name='reviews', on_delete=models.CASCADE)
-    user = models.ForeignKey('auth.User', on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     rating = models.PositiveSmallIntegerField(choices=[(i, i) for i in range(1, 6)])
     comment = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)

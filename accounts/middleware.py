@@ -12,10 +12,15 @@ class LoginRequiredMiddleware:
 
         login_url = reverse('accounts:login')
         logout_url = reverse('accounts:logout')
+        register_url= reverse('accounts:register')
+        register_merchant_url = reverse('accounts:become_merchant')
 
         exempt_urls = [
             login_url,
             logout_url,
+            register_url,
+            register_merchant_url,
+         
         ]
 
         is_exempt = request.path.startswith(tuple(exempt_urls))

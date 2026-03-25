@@ -2,7 +2,16 @@ from django.views.generic import ListView, DetailView, CreateView, UpdateView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
+
+
 from .models import Product, Category, ProductReview
+from django.views.generic import CreateView, UpdateView, DeleteView
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.urls import reverse_lazy
+from django.contrib import messages
+from accounts.mixins import MerchantRequiredMixin, ProductOwnerMixin
+from .models import Product, Category
+
 
 class ProductListView(ListView):
     model = Product
@@ -103,3 +112,6 @@ class AddReviewView(LoginRequiredMixin, CreateView):
         context = super().get_context_data(**kwargs)
         context['product'] = self.product
         return context
+
+
+

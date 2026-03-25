@@ -1,0 +1,44 @@
+{% extends 'accounts/accounts_base.html' %}
+{% block content %}
+<div class="container mt-5">
+  <h2>Register as merchant</h2>
+  <form method="post">
+    {% csrf_token %}
+    <h4>Account</h4>
+    {% for field in form.username|add:form.email|add:form.password %}
+    {# or just render manually: #}
+    {% endfor %}
+
+    <div class="mb-3">
+      <label>Username</label>{{ form.username }}
+    </div>
+    <div class="mb-3">
+      <label>Email</label>{{ form.email }}
+    </div>
+    <div class="mb-3">
+      <label>Password</label>{{ form.password }}
+    </div>
+
+    <hr>
+    <h4>Business information</h4>
+
+    <div class="mb-3">
+      <label>Company name</label>{{ form.company_name }}
+    </div>
+    <div class="mb-3">
+      <label>Business address</label>{{ form.business_address }}
+    </div>
+    <div class="mb-3">
+      <label>Tax ID</label>{{ form.tax_id }}
+    </div>
+    <div class="mb-3">
+      <label>Business phone</label>{{ form.business_phone }}
+    </div>
+    <div class="mb-3">
+      <label>Business email</label>{{ form.business_email }}
+    </div>
+
+    <button class="btn btn-primary">Register</button>
+  </form>
+</div>
+{% endblock %}

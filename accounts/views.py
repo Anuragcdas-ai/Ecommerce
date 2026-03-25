@@ -1,14 +1,28 @@
-from django.views.generic import CreateView, UpdateView, TemplateView, FormView
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.contrib.auth.views import PasswordChangeView
-from django.contrib.auth.forms import UserCreationForm, PasswordChangeForm
-from django.contrib.auth.models import User
-from django import forms
+from django.views.generic import CreateView, ListView, DetailView, UpdateView,TemplateView, FormView
+from django.contrib.auth.views import LoginView
+from django.contrib.auth.mixins import LoginRequiredMixin,UserPassesTestMixin
 from django.urls import reverse_lazy
 from django.contrib import messages
 from django.shortcuts import redirect
+from .models import Profile, UserType
+from .mixins import MerchantRequiredMixin
+from products.models import Product
+from orders.models import Order, OrderItem
+from django.contrib.auth.forms import UserCreationForm
+from django import forms
+
+from django.contrib.auth.models import User
+
+from django.contrib.auth.views import PasswordChangeView
+from django.contrib.auth.forms import UserCreationForm, PasswordChangeForm
+from django.contrib.auth.models import User
 from .models import Profile
-from orders.models import Order
+from django.shortcuts import redirect
+from .form import MerchantRegisterForm
+# views.py
+from django.utils import timezone
+
+
 
 # Extended User Creation Form with Profile fields
 class UserRegistrationForm(UserCreationForm):
@@ -127,3 +141,73 @@ class ChangePasswordView(LoginRequiredMixin, PasswordChangeView):
     def form_valid(self, form):
         messages.success(self.request, 'Password changed successfully!')
         return super().form_valid(form)
+
+
+
+
+
+
+
+
+class MerchantRegisterView(FormView):
+    template_name = "accounts/register_merchant.html"
+    form_class = MerchantRegisterForm
+    success_url = reverse_lazy("accounts:login")
+
+    def form_valid(self, form):
+        user = User.objects.create_user(
+            username=form.cleaned_data["username"],
+            email=form.cleaned_data["email"],
+            password=form.cleaned_data["password"],
+        )
+
+        # Profile is auto-created by signal — just update it
+        user._user_type = UserType.MERCHANT  # signal reads this before creating profile
+        user.save()
+        user.profile.user_type = UserType.MERCHANT
+        user.profile.company_name = form.cleaned_data["company_name"]
+        user.profile.business_address = form.cleaned_data["business_address"]
+        user.profile.tax_id = form.cleaned_data["tax_id"]
+        user.profile.business_phone = form.cleaned_data["business_phone"]
+        user.profile.business_email = form.cleaned_data["business_email"]
+        user.profile.merchant_application_date = timezone.now()
+        user.profile.save()
+
+        messages.success(self.request, "Merchant account created. Wait for admin approval.")
+        return super().form_valid(form)
+
+
+    
+class CustomLoginView(LoginView):
+    template_name = 'accounts/login.html'
+
+    def get_success_url(self):
+        user = self.request.user
+
+        if hasattr(user, 'profile'):
+            print(f"User type: {user.profile.user_type}")
+
+            if user.profile.user_type == UserType.MERCHANT:
+                print("Merchant logged in")
+                return reverse_lazy('accounts:merchant_dashboard')
+
+            elif user.profile.user_type == UserType.BUYER:
+                print("Buyer logged in")
+                return reverse_lazy('products:product_list')
+
+        return reverse_lazy('products:product_list')
+
+
+
+class MerchantDashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+    template_name = 'accounts/merchant_dashboard.html'
+
+    def test_func(self):
+        return self.request.user.profile.user_type == UserType.MERCHANT
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        products = Product.objects.filter(merchant=self.request.user)
+        context['products'] = products
+        context['total_products'] = products.count()
+        return context
